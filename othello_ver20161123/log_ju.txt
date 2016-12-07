@@ -1,0 +1,6 @@
+Binding Socket
+listening...
+get_cfd error: 0
+NAME:unknown QUIT:0 WIN:0 LOSE:0 DRAW:2
+NAME:unknown QUIT:0 WIN:0 LOSE:0 DRAW:2
+time stamp: 03:45:50
