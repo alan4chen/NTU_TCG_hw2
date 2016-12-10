@@ -4,6 +4,13 @@
 #include<cstdio>
 #include<algorithm>
 #include<iostream>
+
+#ifndef ONE
+typedef unsigned long long u64;
+u64 One = 1;
+#define ONE
+#endif
+
 inline bool is_on_board(int x,int y){
     return x >= 0 && x <= 7 && y >= 0 && y <= 7;
 }
@@ -50,6 +57,29 @@ public:
             *this = board();
         }
     }
+    // Return Black Bitboard
+    u64 get_black_bitboard(){
+        u64 bitboard = 0;
+        for(int i=0; i < 8; i++){
+            for(int j=0; j < 8; j++){
+                u64 biter = One<<(63-(i<<3^j));
+                bitboard |= a[i][j]==1?biter:0;
+            }   
+        }
+        return bitboard;
+    }
+    // Return White Bitboard
+    u64 get_white_bitboard(){
+        u64 bitboard = 0;
+        for(int i=0; i < 8; i++){
+            for(int j=0; j < 8; j++){
+                u64 biter = One<<(63-(i<<3^j));
+                bitboard |= a[i][j]==2?biter:0;
+            }   
+        }
+        return bitboard;
+    }
+
     // Updates board with move (x,y) and copies flipped locations to an array
     // start from oit.
     // Parameters

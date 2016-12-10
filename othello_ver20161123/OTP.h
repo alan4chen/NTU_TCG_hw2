@@ -1,4 +1,3 @@
-#include"board.h"
 #include <random>
 #ifdef _WIN32
 #include <chrono>
@@ -7,6 +6,14 @@
 #include <string>
 #include <unistd.h>
 #include <iostream>
+
+#ifndef __board__
+#include "board.h"
+#endif
+
+#ifndef __bitboard__
+#include "bitboard.h"
+#endif
 
 constexpr char m_tolower(char c){
     return c+('A'<=c&&c<='Z')*('a'-'A');
