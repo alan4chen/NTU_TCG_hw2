@@ -1,9 +1,9 @@
-int TYPE = 0;
+int TYPE = 1;
 
 #include"OTP.h"
 #include"my_socket.h"
 #include<cstdio>
-void mode0(){
+void mode0(){ 
     OTP EG(TYPE);
     char ibuf[1024],obuf[1024];
     for(bool is_continued = true;is_continued;){

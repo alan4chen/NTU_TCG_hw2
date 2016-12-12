@@ -140,7 +140,10 @@ public:
 
     u64 random_pick_move(u64 &bitstring){
         u64 mask = bitstring;
-        std::uniform_int_distribution<int> dist(0, __builtin_popcountll(mask)-1);
+        int count = __builtin_popcountll(mask);
+        if(count == 0)
+            return 0;
+        std::uniform_int_distribution<int> dist(0, count-1);
         int index = dist(mt);
         for (int i = 0; i < index; i++)
             mask &= mask - 1;
@@ -190,45 +193,54 @@ public:
         u64 result = 0ull;
         
         u64 empty = ~(own | enemy);
-        u64 victims = N(own) & enemy;
+
+        // N
+        u64 victims = (own << 8) & enemy;
         for (int i=0; i<5; ++i)
-            victims |= N(victims) & enemy;
-        result |= N(victims) & empty;
+            victims |= (victims << 8) & enemy;
+        result |= (victims << 8) & empty;
          
-        victims = S(own) & enemy;
+        // S
+        victims = (own >> 8) & enemy;
         for (int i=0; i<5; ++i)
-            victims |= S(victims) & enemy;
-        result |= S(victims) & empty;
+            victims |= (victims >> 8) & enemy;
+        result |= (victims >> 8) & empty;
          
-        victims = W(own) & enemy;
+        // W
+        victims = ((own & 0x7f7f7f7f7f7f7f7full) << 1) & enemy;
         for (int i=0; i<5; ++i)
-            victims |= W(victims) & enemy;
-        result |= W(victims) & empty;
+            victims |= ((victims & 0x7f7f7f7f7f7f7f7full) << 1) & enemy;
+        result |= ((victims & 0x7f7f7f7f7f7f7f7full) << 1) & empty;
          
-        victims = E(own) & enemy;
+        // E
+        victims = ((own & 0xfefefefefefefefeull) >> 1) & enemy;
         for (int i=0; i<5; ++i)
-            victims |= E(victims) & enemy;
-        result |= E(victims) & empty;
+            victims |= ((victims & 0xfefefefefefefefeull) >> 1) & enemy;
+        result |= ((victims & 0xfefefefefefefefeull) >> 1) & empty;
+        
+        // NW
+        victims = (((own & 0x7f7f7f7f7f7f7f7full) << 1) << 8) & enemy;
+        for (int i=0; i<5; ++i)
+            victims |= (((victims & 0x7f7f7f7f7f7f7f7full) << 1) << 8) & enemy;
+        result |= (((victims & 0x7f7f7f7f7f7f7f7full) << 1) << 8) & empty;
          
-        victims = NW(own) & enemy;
+        // NE
+        victims = (((own & 0xfefefefefefefefeull) >> 1) << 8) & enemy;
         for (int i=0; i<5; ++i)
-            victims |= NW(victims) & enemy;
-        result |= NW(victims) & empty;
+            victims |= (((victims & 0xfefefefefefefefeull) >> 1) << 8) & enemy;
+        result |= (((victims & 0xfefefefefefefefeull) >> 1) << 8) & empty;
          
-        victims = NE(own) & enemy;
+        // SW
+        victims = (((own & 0x7f7f7f7f7f7f7f7full) << 1) >> 8) & enemy;
         for (int i=0; i<5; ++i)
-            victims |= NE(victims) & enemy;
-        result |= NE(victims) & empty;
+            victims |= (((victims & 0x7f7f7f7f7f7f7f7full) << 1) >> 8) & enemy;
+        result |= (((victims & 0x7f7f7f7f7f7f7f7full) << 1) >> 8) & empty;
          
-        victims = SW(own) & enemy;
+        // SE
+        victims = (((own & 0xfefefefefefefefeull) >> 1) >> 8) & enemy;
         for (int i=0; i<5; ++i)
-            victims |= SW(victims) & enemy;
-        result |= SW(victims) & empty;
-         
-        victims = SE(own) & enemy;
-        for (int i=0; i<5; ++i)
-            victims |= SE(victims) & enemy;
-        result |= SE(victims) & empty;
+            victims |= (((victims & 0xfefefefefefefefeull) >> 1) >> 8) & enemy;
+        result |= (((victims & 0xfefefefefefefefeull) >> 1) >> 8) & empty;
      
     return result;
     }

@@ -6,14 +6,22 @@
 #include <string>
 #include <unistd.h>
 #include <iostream>
+#include <math.h>       /* sqrt */  /* log */
+#include <stdlib.h>     /* exit, EXIT_FAILURE */
 
 #ifndef __board__
 #include "board.h"
 #endif
 
-#ifndef __bitboard__
-#include "bitboard.h"
+#ifndef __searchnode__
+#include "SearchNode.h"
 #endif
+
+#ifndef __mytime__
+#include "mytime.h"
+#endif
+
+
 
 constexpr char m_tolower(char c){
     return c+('A'<=c&&c<='Z')*('a'-'A');
@@ -33,9 +41,14 @@ template<class RIT>RIT random_choice(RIT st,RIT ed){
 #endif
     return st+std::uniform_int_distribution<int>(0,ed-st-1)(local_rand);
 }
+
+
+
 class OTP{
     board B;
     history H[128],*HED;
+    int GAME_TYPE = 0;
+
     //initialize in do_init
     void do_init(){
         B = board();
@@ -43,21 +56,33 @@ class OTP{
     }
     //choose the best move in do_genmove
     int do_genmove(){
-        using namespace std;
         /*
-          todo: use Monte-Carlo to choose move
+          GAME TYPE 1: UCB
         */
-        int ML[64],*MLED(B.get_valid_move(ML));
-        // std::cout << *B.get_valid_move(ML) << std::endl;
-        // std::cout << *random_choice(ML,MLED) << std::endl;
-        for(int i=0; i<8; i++){
-            for(int j=0; j<8; j++){
-                cout << B.a[i][j] - char(1);
+        if(GAME_TYPE == 1){
+            struct bitboard quickboard;
+            bitboard_controller.generate_board(quickboard, B);
+            // std::cout << "--- --- --- quickboard: " << std::endl;
+            // bitboard_controller.show_board(quickboard, stderr);
+
+            Node *root = new Node(quickboard);
+            // std::cout << "---before call root->UCB()" << std::endl;
+            u64 move = root->UCB();
+            // std::cout << "---after call root->UCB()" << std::endl;
+            for(int i = 0; i < 64; i++){
+                if(move & One << i){
+                    return 63 - i;
+                }
             }
-            cout << endl;
+            return 64;
         }
-        cout << "gen is: " << (MLED==ML?64:*random_choice(ML,MLED)) << endl;
-        return MLED==ML?64:*random_choice(ML,MLED);
+        /*
+          GAME TYPE 0: random
+        */
+        else{
+            int ML[64],*MLED(B.get_valid_move(ML));
+            return MLED==ML?64:*random_choice(ML,MLED);
+        }
     }
     //update board and history in do_play
     void do_play(int x,int y){
@@ -81,13 +106,22 @@ class OTP{
         }
     }
 public:
-    OTP():B(),HED(H){
+    // GAME_TYPE: 0: Random, 1:UCB
+    OTP(int type):B(),HED(H){
+        GAME_TYPE = type;
         do_init();
     }
     bool do_op(const char*cmd,char*out,FILE*myerr){
         switch(my_hash(cmd)){
             case my_hash("name"):
-                sprintf(out,"name template7122");
+                switch(GAME_TYPE){
+                    case 1:
+                        sprintf(out,"name UCB");    
+                        break;
+                    default:
+                        sprintf(out,"name template7122");
+                        break;
+                }
                 return true;
             case my_hash("clear_board"):
                 do_init();

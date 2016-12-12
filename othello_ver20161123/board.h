@@ -11,6 +11,8 @@ u64 One = 1;
 #define ONE
 #endif
 
+
+
 inline bool is_on_board(int x,int y){
     return x >= 0 && x <= 7 && y >= 0 && y <= 7;
 }
@@ -157,15 +159,15 @@ public:
     // Return value
     // Pointer to the legal moves, one past the last move generated.
     int*get_valid_move(int*oit)const{
-        using namespace std;
-        cout << "oit:"<<endl;
+        // using namespace std;
+        // cout << "oit:"<<endl;
         for(int i=0;i<8;++i){
             for(int j=0;j<8;++j){
                 *oit = i<<3^j;
                 oit+= a[i][j]==0 && is_valid_move(i,j);
-                cout << (a[i][j]==0 && is_valid_move(i,j)) << " ";
+                // cout << (a[i][j]==0 && is_valid_move(i,j)) << " ";
             }
-            cout << endl;
+            // cout << endl;
         }
         // cout<< "get_valid_move: " << *oit << endl;
         // cout<< "3^1 3^2 3^3: " << (3^1) << " " << (3^2) << " " << (3^3) << " " << (3^4) << endl;
