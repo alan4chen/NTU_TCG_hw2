@@ -26,9 +26,8 @@ struct bitboard{
     short pass;
 };
 
-class bitboard_controller{
+class BitboardController{
 public:
-    
 
     void init_board(struct bitboard &quickboard){
         quickboard.blackboard = 0;
@@ -39,9 +38,19 @@ public:
 
     void generate_board(struct bitboard &quickboard, board &matrixboard){
         quickboard.blackboard = matrixboard.get_black_bitboard();
+        //DEBUGG
+        // std::cout << "get_black_bitboard() return:" << std::endl;
+        // BitboardController().show_bit_string(quickboard.blackboard);
         quickboard.whiteboard = matrixboard.get_white_bitboard();
+
+        // std::cout << "get_white_bitboard() return:" << std::endl;
+        // BitboardController().show_bit_string(quickboard.whiteboard);
+
         quickboard.turn = (matrixboard.get_my_tile()==1)?true:false;
         quickboard.pass = matrixboard.get_pass();
+        // std::cout << "quickboard.turn: " << quickboard.turn << std::endl;
+        // std::cout << "quickboard.pass: " << quickboard.pass << std::endl;
+
     }
 
     u64 get_valid_moves(struct bitboard &quickboard){
@@ -61,22 +70,32 @@ public:
             u64 to_flip_bit_string;
             if (quickboard.turn == true){
                 to_flip_bit_string = get_toflip_tiles(quickboard.blackboard, 
-                    quickboard.whiteboard, tile_to_put);
-                quickboard.blackboard |= to_flip_bit_string;
-                quickboard.blackboard |= tile_to_put;
+                quickboard.whiteboard, tile_to_put);
+                quickboard.blackboard ^= tile_to_put;
             }
             else{
                 to_flip_bit_string = get_toflip_tiles(quickboard.whiteboard, 
                     quickboard.blackboard, tile_to_put);
-                quickboard.whiteboard |= to_flip_bit_string;
-                quickboard.whiteboard |= tile_to_put;
+                // std::cout << "--- --- --- --- to_flip_bit_string: " << std::endl;
+                // show_bit_string(to_flip_bit_string);
+                quickboard.whiteboard ^= tile_to_put;
             }
+            quickboard.blackboard ^= to_flip_bit_string;
+            
+            quickboard.whiteboard ^= to_flip_bit_string;
+            
             quickboard.pass = 0;
         }else{
             quickboard.pass ++;
         }
-        quickboard.turn = ~quickboard.turn;
+        // std::cout << "--- --- --- --- --- before turn: " << quickboard.turn << quickboard.turn << true << std::endl;
+        quickboard.turn = (quickboard.turn)?false:true; // TODO: find reason cannot use "~"
+        // std::cout << "--- --- --- --- --- after turn: " << quickboard.turn <<  ~(quickboard.turn) << false << std::endl;
         return;
+    }
+
+    u64 get_filled_board(struct bitboard &quickboard){
+        return quickboard.whiteboard | quickboard.blackboard;
     }
 
     void show_board(struct bitboard &quickboard, FILE*fp)const{
@@ -96,15 +115,31 @@ public:
                 biter = One<<(63-(i<<3^j));
                 fprintf(fp,"%c|",c[((quickboard.blackboard\
                     |quickboard.whiteboard)&biter?(quickboard.blackboard\
-                    &quickboard.whiteboard?1:2):0)]);
+                    &biter?1:2):0)]);
             }
             fputs("\n------------------\n",fp);
         }
         fflush(fp);
     }
 
-    u64 random_pick_bit(u64 &bitstring){
-        int mask = bitstring;
+    void show_bit_string(u64 moves){
+      for(int i=0; i< 8; i++){
+          for(int j=0; j < 8; j++){
+            u64 biter = One << (63-(i*8+j));
+            if(moves&biter){
+                std::cout << 1;
+            }
+            else{
+              std::cout << 0;
+            }
+          }
+          std::cout << std::endl;
+        }
+        std::cout << std::endl << std::endl; 
+}
+
+    u64 random_pick_move(u64 &bitstring){
+        u64 mask = bitstring;
         std::uniform_int_distribution<int> dist(0, __builtin_popcountll(mask)-1);
         int index = dist(mt);
         for (int i = 0; i < index; i++)
