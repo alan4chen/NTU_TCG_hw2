@@ -163,8 +163,7 @@ public:
 
         /* Step 1: Make Children */
         make_children();
-        // No child means no valid moves
-        if(ChildNum == 0){
+        if(ChildNum == 0){ // No child means no valid moves
             return 0;
         }
         std::cout << "---ChildNum is: " << ChildNum << std::endl;
@@ -175,6 +174,7 @@ public:
             // std::cout << "---simulate i: " << i << std::endl;
             nodes[i]->make_simulation();
         }
+        
         /* Step 3: Simulation according best UCB child */
         int win_num;
         double ucb_score;
@@ -219,8 +219,8 @@ public:
         std::cout << "return board:" << std::endl;
         bitboard_controller.show_bit_string(bitboard_controller.get_filled_board(nodes[best_winchild]->current_board) ^\
             bitboard_controller.get_filled_board(current_board));
-        std::cout << "return blackboard: " <<nodes[best_winchild]->current_board.blackboard << std::endl;
-        std::cout << "return whiteboard: " <<nodes[best_winchild]->current_board.whiteboard << std::endl;
+        // std::cout << "return blackboard: " <<nodes[best_winchild]->current_board.blackboard << std::endl;
+        // std::cout << "return whiteboard: " <<nodes[best_winchild]->current_board.whiteboard << std::endl;
         return bitboard_controller.get_filled_board(nodes[best_winchild]->current_board) ^\
             bitboard_controller.get_filled_board(current_board);
 
