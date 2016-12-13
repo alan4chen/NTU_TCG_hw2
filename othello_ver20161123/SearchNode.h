@@ -3,6 +3,7 @@
 #include <csignal>
 #include <signal.h>
 #include <unistd.h>
+#include <list>
 
 #ifndef __bitboard__
 #include "bitboard.h"
@@ -40,10 +41,11 @@ class Node{
 public:
     // As a parent node
     double best_UCB = 0;
-    int best_UCBchild = 0;
+    Node* best_UCBchild_pointer = NULL;
     double best_win = 0;
-    int best_winchild = 0;
-    Node *nodes[64];
+    Node* best_winchild_pointer = NULL;
+    // Node *nodes[64];
+    std::list<Node*> children_pointers;
     int ChildNum = 0;
 
     // As a child node
@@ -72,7 +74,9 @@ public:
                 // std::cout << "--- --- --- after update i: " << i << std::endl;
                 // bitboard_controller.show_board(new_board, stderr);
 
-                nodes[ChildNum++] = new Node(new_board);
+                Node* child_node = new Node(new_board);
+                children_pointers.push_back(child_node);
+                ChildNum ++;
             }
 
         }
@@ -103,50 +107,13 @@ public:
         struct bitboard simulation_board = current_board;
         u64 valid_moves;
         u64 tile_to_put;
-        // int DEBUGG_COUNT = 0;
-        // bitboard_controller.show_board(simulation_board, stderr);
-        // std::cout << "-- -- before loop" << std::endl;
-
-        // double DEBUG_CUR = getCurrentTimestamp();
-        // double DEBUG_NEW_CUR = 0;
 
         while(!bitboard_controller.is_game_over(simulation_board)){
-            // std::cout << "-- -- -- -- before get_valid_moves" << std::endl;
-            
             valid_moves = bitboard_controller.get_valid_moves(simulation_board);
-            // DEBUG_NEW_CUR = getCurrentTimestamp();
-            // DEBUG_VALID_MOVE += DEBUG_NEW_CUR-DEBUG_CUR;
-            // DEBUG_CUR = DEBUG_NEW_CUR;
-
-            // bitboard_controller.show_board(simulation_board, stderr);
-            // bitboard_controller.show_bit_string(valid_moves);
-
-            // std::cout << "-- -- -- -- before random_pick_move" << std::endl;
-
             tile_to_put = bitboard_controller.random_pick_move(valid_moves);
-            // DEBUG_NEW_CUR = getCurrentTimestamp();
-            // DEBUG_RANDOM_PICK += DEBUG_NEW_CUR-DEBUG_CUR;
-            // DEBUG_CUR = DEBUG_NEW_CUR;
-            // std::cout << "-- -- -- -- before update" << std::endl;
             bitboard_controller.update(simulation_board, tile_to_put);
-            // DEBUG_NEW_CUR = getCurrentTimestamp();
-            // DEBUG_UPDATE += DEBUG_NEW_CUR-DEBUG_CUR;
-            // DEBUG_CUR = DEBUG_NEW_CUR;
-            // std::cout << "-- -- -- -- after update" << std::endl;
-
-            // DEBUGG_COUNT ++;
-            // // bitboard_controller.show_board(simulation_board, stderr);
-            // if(DEBUGG_COUNT > 100){
-            //     exit(1);
-            // }
-
-            // std::cout << "--- --- --- --- turn: " << simulation_board.turn << std::endl;
-
         }
-        // std::cout << "-- -- after loop" << std::endl;
-        // std::cout << "--- --- --- DEBUGG_COUNT depth: " << DEBUGG_COUNT << std::endl;
-        // bitboard_controller.show_board(simulation_board, stderr);
-        // exit(1);
+ 
         int score = bitboard_controller.get_score(simulation_board);
         if(((current_board.turn==true) && score > 0) || 
             ((current_board.turn==false) && score < 0)){
@@ -170,11 +137,10 @@ public:
 
         /* Step 2: Init Simulation */
         // Simulation Among the child
-        for(int i=0; i<ChildNum; i++){
-            // std::cout << "---simulate i: " << i << std::endl;
-            nodes[i]->make_simulation();
+        for(std::list<Node*>::iterator it=children_pointers.begin(); it != children_pointers.end(); ++it){
+            (*it)->make_simulation();
         }
-        
+
         /* Step 3: Simulation according best UCB child */
         int win_num;
         double ucb_score;
@@ -183,53 +149,54 @@ public:
             // Calculate children's UCB Score
             // Add N
             N = 0;
-            for(int i=0; i<ChildNum; i++){
-                N += nodes[i]->N;
+            for(std::list<Node*>::iterator it=children_pointers.begin(); it != children_pointers.end(); ++it){
+                N += (*it)->N;
             }
             // Find best ucb score in children
-            for(int i=0; i<ChildNum; i++){
-                win_num = nodes[i]->N - nodes[i]->W;
-                win_score = win_num / nodes[i]->N;
-                ucb_score = win_score + c * sqrt(log(N)/nodes[i]->N);
+            for(std::list<Node*>::iterator it=children_pointers.begin(); it != children_pointers.end(); ++it){
+                win_num = (*it)->N - (*it)->W;
+                win_score = win_num / (*it)->N;
+                ucb_score = win_score + c * sqrt(log(N)/(*it)->N);
                 if(ucb_score > best_UCB){
                     best_UCB = ucb_score;
-                    best_UCBchild = i;
+                    best_UCBchild_pointer = *it;
                 }
                 
             }
-            // std::cout << "best child is: " << best_UCBchild << std::endl;
-            nodes[best_UCBchild]->make_simulation();
+            best_UCBchild_pointer->make_simulation();
         }
 
         /* Step 4: find the child with best win rate */
-        for(int i=0; i<ChildNum; i++){
-            win_num = nodes[i]->N - nodes[i]->W;
-            win_score = win_num / nodes[i]->N;
+        for(std::list<Node*>::iterator it=children_pointers.begin(); it != children_pointers.end(); ++it){
+            win_num = (*it)->N - (*it)->W;
+            win_score = win_num / (*it)->N;
             if(win_score > best_win){
                 best_win = win_score;
-                best_winchild = i;
+                best_winchild_pointer = *it;
             }
         }
 
         // return best move with largest win_rate
-        for(int i=0; i<ChildNum; i++){
-            std::cout << "child " << i << " has win score: " << nodes[i]->W/nodes[i]->N << std::endl;
+        int DEBUG_COUNT = 0;
+        for(std::list<Node*>::iterator it=children_pointers.begin(); it != children_pointers.end(); ++it){
+            std::cout << "child " << DEBUG_COUNT << " has win score: " << (*it)->W/(*it)->N << std::endl;
+            DEBUG_COUNT ++;
         }
-        std::cout << "choose child: " << best_winchild << std::endl;
+        std::cout << "choose child with rate: " << best_winchild_pointer->W/best_winchild_pointer->N << std::endl;
         std::cout << "return board:" << std::endl;
-        bitboard_controller.show_bit_string(bitboard_controller.get_filled_board(nodes[best_winchild]->current_board) ^\
+        bitboard_controller.show_bit_string(bitboard_controller.get_filled_board(best_winchild_pointer->current_board) ^\
             bitboard_controller.get_filled_board(current_board));
         // std::cout << "return blackboard: " <<nodes[best_winchild]->current_board.blackboard << std::endl;
         // std::cout << "return whiteboard: " <<nodes[best_winchild]->current_board.whiteboard << std::endl;
-        return bitboard_controller.get_filled_board(nodes[best_winchild]->current_board) ^\
+        return bitboard_controller.get_filled_board(best_winchild_pointer->current_board) ^\
             bitboard_controller.get_filled_board(current_board);
 
     }
 
     ~Node(){
         // cout << "delete:" << a << endl;
-        for(int i=0; i<ChildNum; i++){
-            delete nodes[ChildNum];
+        for(std::list<Node*>::iterator it=children_pointers.begin(); it != children_pointers.end(); ++it){
+            delete *it;
         }
     }
 };
