@@ -40,9 +40,9 @@ void alarm_handler(int signal){
 class Node{
 public:
     // As a parent node
-    double best_UCB = 0;
+    double best_UCB = -1;
     Node* best_UCBchild_pointer = NULL;
-    double best_win = 0;
+    double best_win = -1;
     Node* best_winchild_pointer = NULL;
     // Node *nodes[64];
     std::list<Node*> children_pointers;
@@ -53,6 +53,15 @@ public:
     double N = 0; // Total Simulation in this Node;
     struct bitboard current_board;
 
+    // UTC propogation
+    double W_o = 0; // Origin Simulation Win
+    double N_o = 0; // Origin Simulation Total Simulation Number
+
+    // Temperal Parameters
+    int win_num;
+    double ucb_score;
+    double win_score;
+
     Node(struct bitboard this_bitboard){
         current_board = this_bitboard;
     }
@@ -61,19 +70,11 @@ public:
         u64 valid_moves = bitboard_controller.get_valid_moves(current_board);
         u64 move;
 
-        //DEBUGG
-        // std::cout << "---show valid_moves:" << std::endl;
-        // bitboard_controller.show_bit_string(valid_moves);
-
         for(int i = 0; i < 64; i++){
             move = (valid_moves & (One << i));
             if(move){
                 struct bitboard new_board = current_board;
                 bitboard_controller.update(new_board, move);
-                // DEBUGG
-                // std::cout << "--- --- --- after update i: " << i << std::endl;
-                // bitboard_controller.show_board(new_board, stderr);
-
                 Node* child_node = new Node(new_board);
                 children_pointers.push_back(child_node);
                 ChildNum ++;
@@ -84,20 +85,10 @@ public:
 
     void make_simulation(){
         for(int i = 0; i < SimulationNum; i++){
-            // std::cout << "--- --- make_simulation i: " << i << std::endl;
             if(simulator()){
                 W++;
             }
             N++;
-
-            // if(i > 5){
-            //     std::cout << DEBUG_VALID_MOVE << std::endl;
-            //     std::cout << DEBUG_RANDOM_PICK << std::endl;
-            //     std::cout << DEBUG_UPDATE << std::endl;
-            //     exit(1);
-            // }
-            // DEBUG_SIMULATION ++;
-
         }
         return;
     }
@@ -122,6 +113,96 @@ public:
         return false;
     }
 
+
+    void UCT_SESB(){
+        /* Step 1: Selection */
+        bool isSelected = false;
+        if(ChildNum == 0){
+            isSelected = true;
+        }
+        else{
+            best_UCBchild_pointer->UCT_SESB();
+        }
+
+        /* Step 2: Expansion */
+        if(isSelected){
+            W_o = W; // Save the original win rate & simulation number
+            N_o = N;
+            make_children();
+            if(ChildNum == 0){ // No child means no valid moves, give a pass move
+                struct bitboard new_board = current_board;
+                u64 move = 0;
+                bitboard_controller.update(new_board, move);
+                Node* child_node = new Node(new_board);
+                children_pointers.push_back(child_node);
+                ChildNum ++;
+            }
+        }
+
+        /* Step 3: Simulation */
+        if(isSelected){
+            for(std::list<Node*>::iterator it=children_pointers.begin(); it != children_pointers.end(); ++it){
+                (*it)->make_simulation();
+            }
+        }
+        /* Step 4: Backpropagation*/
+        W = W_o;
+        N = N_o;
+        for(std::list<Node*>::iterator it=children_pointers.begin(); it != children_pointers.end(); ++it){
+            N += (*it)->N;
+            W += (*it)->N - (*it)->W;
+        }
+        // Find best ucb score in children
+        for(std::list<Node*>::iterator it=children_pointers.begin(); it != children_pointers.end(); ++it){
+            win_num = (*it)->N - (*it)->W;
+            win_score = win_num / (*it)->N;
+            ucb_score = win_score + c * sqrt(log(N)/(*it)->N);
+            if(ucb_score > best_UCB){
+                best_UCB = ucb_score;
+                best_UCBchild_pointer = *it;
+            }
+        }
+
+        return;
+    }
+
+    u64 UCT(){
+        ret_flag = false;
+        signal(SIGALRM, alarm_handler);
+        alarm(Timeout);
+
+        while(ret_flag!=true){
+            // std::cout << "call UCT_SESB from root" << std::endl;
+            UCT_SESB();
+        }
+
+        /* find the child with best win rate */
+        for(std::list<Node*>::iterator it=children_pointers.begin(); it != children_pointers.end(); ++it){
+            win_num = (*it)->N - (*it)->W;
+            win_score = win_num / (*it)->N;
+            if(win_score > best_win){
+                best_win = win_score;
+                best_winchild_pointer = *it;
+            }
+        }
+
+        // return best move with largest win_rate
+        int DEBUG_COUNT = 0;
+        for(std::list<Node*>::iterator it=children_pointers.begin(); it != children_pointers.end(); ++it){
+            std::cout << "child " << DEBUG_COUNT << " has win score: " << (*it)->W/(*it)->N << std::endl;
+            DEBUG_COUNT ++;
+        }
+        std::cout << "choose child with rate: " << best_winchild_pointer->W/best_winchild_pointer->N << std::endl;
+        std::cout << "return board:" << std::endl;
+        bitboard_controller.show_bit_string(bitboard_controller.get_filled_board(best_winchild_pointer->current_board) ^\
+            bitboard_controller.get_filled_board(current_board));
+        // std::cout << "return blackboard: " <<nodes[best_winchild]->current_board.blackboard << std::endl;
+        // std::cout << "return whiteboard: " <<nodes[best_winchild]->current_board.whiteboard << std::endl;
+        return bitboard_controller.get_filled_board(best_winchild_pointer->current_board) ^\
+            bitboard_controller.get_filled_board(current_board);
+    }   
+
+
     // return move in u64
     u64 UCB(){
         ret_flag = false;
@@ -142,9 +223,6 @@ public:
         }
 
         /* Step 3: Simulation according best UCB child */
-        int win_num;
-        double ucb_score;
-        double win_score;
         while(ret_flag!=true){
             // Calculate children's UCB Score
             // Add N
