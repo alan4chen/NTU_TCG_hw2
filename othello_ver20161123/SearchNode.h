@@ -20,7 +20,7 @@ double c = 1.18;
 int SimulationNum = 1000;
 
 int LoopNum = 100;
-int Timeout = 3;
+int Timeout = 9;
 
 double Rd = 2;
 double PruningSigma = 0.4;
@@ -213,12 +213,12 @@ public:
                     if((*it)->sigma < PruningSigma && Ml > bestMl){
                         bestMl = Ml;
                     }
-                    if(Ml == 1 && ChildNum > 1){
-                        std::cout << "error!\n";
-                        std::cout << " before show_board -- (*it)->Ml is: " << Ml << " sigma is: " << (*it)->sigma << std::endl;
-                        bitboard_controller.show_board(current_board, stdout);
+                    // if(Ml == 1 && ChildNum > 1){
+                        // std::cout << "error!\n";
+                        // std::cout << " before show_board -- (*it)->Ml is: " << Ml << " sigma is: " << (*it)->sigma << std::endl;
+                        // bitboard_controller.show_board(current_board, stdout);
                         // exit(1);
-                    }
+                    // }
                 }
 
                 // Cut a child if child.Mr < bestMl
