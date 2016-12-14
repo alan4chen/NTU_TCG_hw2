@@ -68,6 +68,7 @@ class OTP{
             Node *root = new Node(quickboard);
             // std::cout << "---before call root->UCB()" << std::endl;
             u64 move = root->UCB();
+            delete root;
             // std::cout << "---after call root->UCB()" << std::endl;
             for(int i = 0; i < 64; i++){
                 if(move & One << i){
@@ -80,6 +81,7 @@ class OTP{
           GAME TYPE 2: UCT
         */
         if(GAME_TYPE == 2){
+
             struct bitboard quickboard;
             bitboard_controller.generate_board(quickboard, B);
             // std::cout << "--- --- --- quickboard: " << std::endl;
@@ -89,6 +91,24 @@ class OTP{
             // std::cout << "---before call root->UCB()" << std::endl;
             u64 move = root->UCT();
             // std::cout << "---after call root->UCB()" << std::endl;
+            delete root;
+
+            for(int i = 0; i < 64; i++){
+                if(move & One << i){
+                    return 63 - i;
+                }
+             }
+            return 64;
+        }
+        /*
+          GAME TYPE 3: UCT with progressive pruning
+        */
+        if(GAME_TYPE == 3){
+            struct bitboard quickboard;
+            bitboard_controller.generate_board(quickboard, B);
+            Node *root = new Node(quickboard);
+            u64 move = root->UCT(true);
+            delete root;
             for(int i = 0; i < 64; i++){
                 if(move & One << i){
                     return 63 - i;
@@ -96,6 +116,7 @@ class OTP{
             }
             return 64;
         }
+
         /*
           GAME TYPE 0: random
         */
@@ -140,6 +161,9 @@ public:
                         break;
                     case 2:
                         sprintf(out,"name UCT");    
+                        break;
+                    case 3:
+                        sprintf(out,"name UCTPP");    
                         break;
                     default:
                         sprintf(out,"name template7122");

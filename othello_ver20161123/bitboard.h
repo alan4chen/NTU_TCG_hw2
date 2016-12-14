@@ -1,3 +1,4 @@
+
 #ifndef __bitboard__
 #define __bitboard__
 #include<cctype>

@@ -3,6 +3,7 @@
 #include <csignal>
 #include <signal.h>
 #include <unistd.h>
+#include <cmath>
 #include <list>
 
 #ifndef __bitboard__
@@ -16,10 +17,13 @@
 
 /*******PARAMETERS*******/
 double c = 1.18;
-int SimulationNum = 100;
+int SimulationNum = 1000;
 
 int LoopNum = 100;
-int Timeout = 1;
+int Timeout = 3;
+
+double Rd = 2;
+double PruningSigma = 0.4;
 /************************/
 
 double MIN_DOUBLE = std::numeric_limits<double>::lowest();
@@ -57,10 +61,20 @@ public:
     double W_o = 0; // Origin Simulation Win
     double N_o = 0; // Origin Simulation Total Simulation Number
 
+    // Progressive Pruning
+    double bestMl = 0;
+
     // Temperal Parameters
     int win_num;
     double ucb_score;
     double win_score;
+
+    double mean= 0;
+    double sigma= 0;
+    double Mr= 0;
+    double Ml = 0;
+    double sum= 0;
+    double square_sum= 0;
 
     Node(struct bitboard this_bitboard){
         current_board = this_bitboard;
@@ -113,15 +127,14 @@ public:
         return false;
     }
 
-
-    void UCT_SESB(){
+    void UCT_SESB(bool &ProgressivePruning){
         /* Step 1: Selection */
         bool isSelected = false;
         if(ChildNum == 0){
             isSelected = true;
         }
         else{
-            best_UCBchild_pointer->UCT_SESB();
+            best_UCBchild_pointer->UCT_SESB(ProgressivePruning);
         }
 
         /* Step 2: Expansion */
@@ -144,6 +157,7 @@ public:
             for(std::list<Node*>::iterator it=children_pointers.begin(); it != children_pointers.end(); ++it){
                 (*it)->make_simulation();
             }
+            
         }
         /* Step 4: Backpropagation*/
         W = W_o;
@@ -152,7 +166,15 @@ public:
             N += (*it)->N;
             W += (*it)->N - (*it)->W;
         }
+
+        /* Progressive Pruning */
+        if(ProgressivePruning){
+            doProgressivePruning();
+        }
+
+
         // Find best ucb score in children
+        best_UCB = 0;
         for(std::list<Node*>::iterator it=children_pointers.begin(); it != children_pointers.end(); ++it){
             win_num = (*it)->N - (*it)->W;
             win_score = win_num / (*it)->N;
@@ -162,18 +184,112 @@ public:
                 best_UCBchild_pointer = *it;
             }
         }
-
+        
         return;
     }
 
-    u64 UCT(){
+    void doProgressivePruning(){
+        // update mean, sd in this node
+            sum = 0;
+            square_sum = 0;
+            for(std::list<Node*>::iterator it=children_pointers.begin(); it != children_pointers.end(); ++it){
+                win_num = (*it)->N - (*it)->W;
+                win_score = win_num / (*it)->N;
+                sum += win_score;
+                square_sum += win_score * win_score;
+            }
+            mean = sum/ChildNum;
+            sigma = sqrt(square_sum/ChildNum-mean*mean);
+
+            if(ChildNum > 2){
+                // Find Best Ml among children
+                bestMl = 0;
+                for(std::list<Node*>::iterator it=children_pointers.begin(); it != children_pointers.end(); ++it){
+                    if((*it)->ChildNum == 0){
+                        continue;
+                    }
+                    Ml = 1 - (*it)->mean - Rd * (*it)->sigma;
+                    // std::cout << "(*it)->Ml is: " << Ml << " sigma is: " << (*it)->sigma << " mean is: " << (*it)->mean <<  " childnum: " << (*it)->ChildNum << std::endl;
+                    if((*it)->sigma < PruningSigma && Ml > bestMl){
+                        bestMl = Ml;
+                    }
+                    if(Ml == 1 && ChildNum > 1){
+                        std::cout << "error!\n";
+                        std::cout << " before show_board -- (*it)->Ml is: " << Ml << " sigma is: " << (*it)->sigma << std::endl;
+                        bitboard_controller.show_board(current_board, stdout);
+                        // exit(1);
+                    }
+                }
+
+                // Cut a child if child.Mr < bestMl
+                for(std::list<Node*>::iterator it=children_pointers.begin(); it != children_pointers.end(); ++it){
+                    if((*it)->ChildNum == 0){
+                        continue;
+                    }
+                    Mr = 1 - (*it)->mean + Rd * (*it)->sigma;
+                    if((*it)->sigma < PruningSigma && Mr < bestMl){
+                        std::cout << "--------CUT!!!" << std::endl;
+                        delete (*it);
+                        children_pointers.erase(it);
+                        ChildNum --;
+                    }
+                }
+            }
+        return;
+    }
+
+    // Not Used
+    void doProgressivePruning_Bonomial(){
+        exit(1);
+        // update mean, sd in this node
+            sum = 0;
+            square_sum = 0;
+
+            // find bestMl
+            bestMl = 0;
+            for(std::list<Node*>::iterator it=children_pointers.begin(); it != children_pointers.end(); ++it){
+                win_num = (*it)->N - (*it)->W;
+                mean = win_num / (*it)->N;
+                sigma = sqrt(mean*(1-mean));
+                if(sigma < PruningSigma && mean - Rd * sigma > bestMl){
+                    bestMl = mean - Rd * sigma;
+                }
+            }
+
+            if(ChildNum > 2){
+                // Find Best Ml among children
+                bestMl = 0;
+                for(std::list<Node*>::iterator it=children_pointers.begin(); it != children_pointers.end(); ++it){
+                    Ml = 1 - (*it)->mean - Rd * (*it)->sigma;
+                    // std::cout << "(*it)->Ml is: " << Ml << " sigma is: " << (*it)->sigma << " mean is: " << (*it)->mean <<  " childnum: " << (*it)->ChildNum << std::endl;
+                    if((*it)->sigma < PruningSigma && Ml > bestMl){
+                        bestMl = Ml;
+                    }
+                }
+                // Cut a child if child.Mr < bestMl
+                for(std::list<Node*>::iterator it=children_pointers.begin(); it != children_pointers.end(); ++it){
+                    win_num = (*it)->N - (*it)->W;
+                    mean = win_num / (*it)->N;
+                    sigma = sqrt(mean*(1-mean));
+                    if(sigma < PruningSigma && mean + Rd * sigma < bestMl){
+                        // std::cout << "--------CUT!!!" << std::endl;
+                        delete *it;
+                        children_pointers.erase(it);
+                        ChildNum --;
+                    }
+                }
+            }
+        
+    }
+
+    u64 UCT(bool ProgressivePruning=false){
         ret_flag = false;
         signal(SIGALRM, alarm_handler);
         alarm(Timeout);
 
         while(ret_flag!=true){
             // std::cout << "call UCT_SESB from root" << std::endl;
-            UCT_SESB();
+            UCT_SESB(ProgressivePruning);
         }
 
         /* find the child with best win rate */
@@ -231,6 +347,7 @@ public:
                 N += (*it)->N;
             }
             // Find best ucb score in children
+            best_UCB = 0;
             for(std::list<Node*>::iterator it=children_pointers.begin(); it != children_pointers.end(); ++it){
                 win_num = (*it)->N - (*it)->W;
                 win_score = win_num / (*it)->N;
@@ -272,7 +389,7 @@ public:
     }
 
     ~Node(){
-        // cout << "delete:" << a << endl;
+        // std::cout << "delete Node" << std::endl;
         for(std::list<Node*>::iterator it=children_pointers.begin(); it != children_pointers.end(); ++it){
             delete *it;
         }
