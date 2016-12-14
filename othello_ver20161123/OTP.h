@@ -148,7 +148,7 @@ class OTP{
     }
 public:
     // GAME_TYPE: 0: Random, 1:UCB
-    OTP(int type):B(),HED(H){
+    OTP(int type=3):B(),HED(H){
         GAME_TYPE = type;
         do_init();
     }
