@@ -1,4 +1,4 @@
-killall judge
+
 make judge
 echo compile_judge_complete
 make search
