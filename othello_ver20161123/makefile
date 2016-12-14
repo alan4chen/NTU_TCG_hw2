@@ -1,15 +1,14 @@
 
-all:
+all: clean judge ui search
+
+
+judge: judge.cpp 
 	g++ -std=c++11 judge.cpp -o judge
+
+ui: simple_http_UI.cpp
 	g++ -std=c++11 simple_http_UI.cpp -o simple_http_UI
 
-judge:
-	g++ -std=c++11 judge.cpp -o judge
-
-ui:
-	g++ -std=c++11 simple_http_UI.cpp -o simple_http_UI
-
-search: search.cpp search_ucb.cpp clean
+search: 
 	g++ search.cpp -std=c++11 -O2 -Wall -o search
 	g++ search_ucb.cpp -std=c++11 -O2 -Wall -o search_ucb
 	g++ search_uct.cpp -std=c++11 -O2 -Wall -o search_uct
