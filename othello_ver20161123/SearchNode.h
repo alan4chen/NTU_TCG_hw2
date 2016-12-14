@@ -228,7 +228,7 @@ public:
                     }
                     Mr = 1 - (*it)->mean + Rd * (*it)->sigma;
                     if((*it)->sigma < PruningSigma && Mr < bestMl){
-                        std::cout << "--------CUT!!!" << std::endl;
+                        // std::cout << "--------CUT!!!" << std::endl;
                         delete (*it);
                         children_pointers.erase(it);
                         ChildNum --;
