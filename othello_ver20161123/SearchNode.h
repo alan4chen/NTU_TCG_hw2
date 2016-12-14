@@ -237,6 +237,9 @@ public:
                         // std::cout << "--------CUT!!!" << std::endl;
                         delete (*it);
                         children_pointers.erase(it);
+                        if(it == children_pointers.end()){
+                            break;
+                        }
                         ChildNum --;
                     }
                 }
