@@ -20,7 +20,7 @@ double c = 1.18;
 int SimulationNum = 1000;
 
 int LoopNum = 100;
-int Timeout = 9;
+int Timeout = 8;
 
 double Rd = 2;
 double PruningSigma = 0.4;
