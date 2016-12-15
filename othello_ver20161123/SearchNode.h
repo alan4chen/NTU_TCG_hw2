@@ -99,12 +99,12 @@ public:
 
     void make_simulation(){
         for(int i = 0; i < SimulationNum; i++){
-            if(ret_flag){
-                if(N == 0){
-                    N = 1;
-                }
-                return;
-            }
+            // if(ret_flag){
+            //     if(N == 0){
+            //         N = 1;
+            //     }
+            //     return;
+            // }
             if(simulator()){
                 W++;
             }
