@@ -135,6 +135,7 @@ class OTP{
                         root = *it;
                         s_root->children_pointers.erase(it);
                         std::cout << "got save!\n";
+                        break;
                     }
                 }
                 delete s_root;
@@ -154,6 +155,7 @@ class OTP{
                     s_root = *it;
                     root->children_pointers.erase(it);
                     std::cout << "to save!\n";
+                    break;
                 }
             }
             delete root;
