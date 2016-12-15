@@ -144,7 +144,7 @@ class OTP{
             }
 
             // call UCT
-            u64 move = root->UCT(true);
+            u64 move = root->UCT();
 
             // save root which the board moves
             bitboard_controller.update(quickboard, move);
