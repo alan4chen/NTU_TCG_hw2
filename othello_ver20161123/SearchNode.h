@@ -16,14 +16,14 @@
 
 
 /*******PARAMETERS*******/
-double c = 1.18;
+double c = 2.718;
 int SimulationNum = 1000;
 
 int LoopNum = 100;
 int Timeout = 9;
 
 double Rd = 2;
-double PruningSigma = 0.4;
+double PruningSigma = 0.2;
 /************************/
 
 double MIN_DOUBLE = std::numeric_limits<double>::lowest();

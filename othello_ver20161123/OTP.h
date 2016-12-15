@@ -209,16 +209,16 @@ public:
             case my_hash("name"):
                 switch(GAME_TYPE){
                     case 1:
-                        sprintf(out,"b02902071 UCB");    
+                        sprintf(out,"name b02902071 UCB");    
                         break;
                     case 2:
-                        sprintf(out,"b02902071");    
+                        sprintf(out,"name b02902071");    
                         break;
                     case 3:
-                        sprintf(out,"b02902071 UCTPP");    
+                        sprintf(out,"name b02902071 UCTPP");    
                         break;
                     case 4:
-                        sprintf(out,"b02902071 UCTS");    
+                        sprintf(out,"name b02902071 UCTS");    
                         break;
                     default:
                         sprintf(out,"name template7122");
