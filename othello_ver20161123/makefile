@@ -1,6 +1,6 @@
 
 all: 
-	g++ search_ucts.cpp -std=c++11 -O2 -Wall -o b02902071
+	g++ search_uct.cpp -std=c++11 -O2 -Wall -o b02902071
 
 
 judge: judge.cpp 
