@@ -43,6 +43,7 @@ template<class RIT>RIT random_choice(RIT st,RIT ed){
 }
 
 
+Node *s_root = NULL; // save for type 4
 
 class OTP{
     board B;
@@ -118,6 +119,55 @@ class OTP{
         }
 
         /*
+          GAME TYPE 4: UCT with saving root node
+        */
+        
+        if(GAME_TYPE == 4){
+            Node *root = NULL;
+            struct bitboard quickboard;
+            bitboard_controller.generate_board(quickboard, B);
+
+            // get the new root in the old root
+            if(s_root != NULL){
+                for(std::list<Node*>::iterator it=(s_root->children_pointers).begin(); 
+                        it != (s_root->children_pointers).end(); ++it){
+                    if(bitboard_controller.is_same_board(quickboard, (*it)->current_board)){
+                        root = *it;
+                        s_root->children_pointers.erase(it);
+                        std::cout << "got save!\n";
+                    }
+                }
+                delete s_root;
+            }
+            if(root == NULL){
+                root = new Node(quickboard);
+            }
+
+            // call UCT
+            u64 move = root->UCT(true);
+
+            // save root which the board moves
+            bitboard_controller.update(quickboard, move);
+            for(std::list<Node*>::iterator it=(root->children_pointers).begin(); 
+                    it != (root->children_pointers).end(); ++it){
+                if(bitboard_controller.is_same_board(quickboard, (*it)->current_board)){
+                    s_root = *it;
+                    root->children_pointers.erase(it);
+                    std::cout << "to save!\n";
+                }
+            }
+            delete root;
+
+            // return the move in xy
+            for(int i = 0; i < 64; i++){
+                if(move & One << i){
+                    return 63 - i;
+                }
+            }
+            return 64;
+        }
+
+        /*
           GAME TYPE 0: random
         */
         else{
@@ -164,6 +214,9 @@ public:
                         break;
                     case 3:
                         sprintf(out,"name UCTPP");    
+                        break;
+                    case 4:
+                        sprintf(out,"name UCTS");    
                         break;
                     default:
                         sprintf(out,"name template7122");

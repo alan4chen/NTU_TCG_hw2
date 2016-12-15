@@ -115,6 +115,7 @@ public:
 
     // return true if win
     bool simulator(){
+        // DEBUG_SIMULATION ++;
         struct bitboard simulation_board = current_board;
         u64 valid_moves;
         u64 tile_to_put;
@@ -290,6 +291,7 @@ public:
     }
 
     u64 UCT(bool ProgressivePruning=false){
+        // DEBUG_SIMULATION = 0;
         ret_flag = false;
         signal(SIGALRM, alarm_handler);
         alarm(Timeout);
@@ -321,6 +323,9 @@ public:
             bitboard_controller.get_filled_board(current_board));
         // std::cout << "return blackboard: " <<nodes[best_winchild]->current_board.blackboard << std::endl;
         // std::cout << "return whiteboard: " <<nodes[best_winchild]->current_board.whiteboard << std::endl;
+        
+        // std::cout << "DEBUG_SIMULATION: " << DEBUG_SIMULATION << std::endl;
+
         return bitboard_controller.get_filled_board(best_winchild_pointer->current_board) ^\
             bitboard_controller.get_filled_board(current_board);
     }   
@@ -328,6 +333,7 @@ public:
 
     // return move in u64
     u64 UCB(){
+        // DEBUG_SIMULATION = 0;
         ret_flag = false;
         signal(SIGALRM, alarm_handler);
         alarm(Timeout);
@@ -388,6 +394,9 @@ public:
         std::cout << "return board:" << std::endl;
         bitboard_controller.show_bit_string(bitboard_controller.get_filled_board(best_winchild_pointer->current_board) ^\
             bitboard_controller.get_filled_board(current_board));
+       
+        // std::cout << "DEBUG_SIMULATION: " << DEBUG_SIMULATION << std::endl;
+
         // std::cout << "return blackboard: " <<nodes[best_winchild]->current_board.blackboard << std::endl;
         // std::cout << "return whiteboard: " <<nodes[best_winchild]->current_board.whiteboard << std::endl;
         return bitboard_controller.get_filled_board(best_winchild_pointer->current_board) ^\

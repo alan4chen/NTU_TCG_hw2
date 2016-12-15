@@ -123,6 +123,17 @@ public:
         fflush(fp);
     }
 
+    bool is_same_board(struct bitboard &quickboard1, struct bitboard &quickboard2){
+        if(quickboard1.blackboard == quickboard2.blackboard && 
+            quickboard1.whiteboard == quickboard2.whiteboard &&
+            quickboard1.turn == quickboard2.turn &&
+            quickboard1.pass == quickboard2.pass){
+            return true;
+        }
+        return false;
+    }
+
+
     void show_bit_string(u64 moves){
       for(int i=0; i< 8; i++){
           for(int j=0; j < 8; j++){
