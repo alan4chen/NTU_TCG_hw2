@@ -248,7 +248,7 @@ public:
 
     // Not Used
     void doProgressivePruning_Bonomial(){
-        exit(1);
+        // exit(1);
         // update mean, sd in this node
             sum = 0;
             square_sum = 0;
@@ -284,6 +284,7 @@ public:
                         delete *it;
                         children_pointers.erase(it);
                         ChildNum --;
+                        --it;
                     }
                 }
             }
