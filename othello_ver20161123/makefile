@@ -1,5 +1,6 @@
 
-all: clean judge ui search
+all: 
+	g++ search_ucts.cpp -std=c++11 -O2 -Wall -o b02902071
 
 
 judge: judge.cpp 
@@ -23,3 +24,4 @@ clean:
 	rm -f ./search_uct || true
 	rm -f ./search_progressivepruning || true
 	rm -f ./search_ucts || true
+	rm -f ./b02902071 || true
